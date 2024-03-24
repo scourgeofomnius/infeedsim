@@ -1,8 +1,8 @@
 import pymunk
 tc_max_speed = 70
-deck2_max_speed = 30
+deck2_max_speed = 50
 decline_max_speed = 120
-speedup_max_speed = 90
+speedup_max_speed = 120
 
 def limit_velocity_tc(body, gravity, damping, dt):
     max_velocity = tc_max_speed

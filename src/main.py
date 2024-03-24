@@ -3,9 +3,12 @@ import pymunk
 import pymunk.pygame_util
 import math
 import sys
+import time
 
+from variables import *
 from classes import *
 from cols import *
+
 
 
 pygame.init()
@@ -15,7 +18,6 @@ WIDTH, HEIGHT = 1920,800
 scale = WIDTH / 300
 mu = 2
 objects = []
-
 
 tc_height = 200
 tc_width = 70 * scale
@@ -36,7 +38,6 @@ deck2_end_y = deck2_start_y
 speedup_position = tc_width - (18 * scale)
 dealer2_position = deck2_end_x - (45 * scale)
 
-
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Kinematics approximation ")
 
@@ -50,17 +51,12 @@ def draw(space, window,draw_options):
     window.fill("white")
     space.debug_draw(draw_options) 
     pygame.display.update()
-    
-
-
 
 def create_wall(space, x,y,width):
     shape = pymunk.Segment(space.static_body, x, y, width)
     shape.body.position = 0,0
     shape.friction = mu
     space.add(shape)
-
-
 
 def run(window, width, height):
     run           = True
@@ -72,7 +68,12 @@ def run(window, width, height):
     space         = pymunk.Space()
     space.gravity = (0,981)
 
-    create_wall(space, (deck2_end_x, deck2_end_y-10),(deck2_end_x, deck2_end_y-50), 10) 
+    #create_wall(space, (deck2_end_x, deck2_end_y-10),(deck2_end_x, deck2_end_y-50), 10) 
+    pinch = Wall((deck2_end_x, deck2_end_y-10),
+                 (deck2_end_x, deck2_end_y-50),
+                 10,
+                 space,
+                 11)
 
     #create_belt(space)
     tc       = Chain((-50, tc_height),(tc_width, tc_height), 10, space, 2)
@@ -81,7 +82,61 @@ def run(window, width, height):
     d2       = Chain((deck2_start_x,deck2_start_y),(deck2_end_x,deck2_end_y), 10, space, 5)
 
     speed1   = SpeedupWheel((speedup_position, tc_height),15, space)
+    pe1 = Sensor((speedup_position+8, tc_height - 100),
+                 (speedup_position+8, tc_height + 30), 
+                 1, 
+                 space, 
+                 7,
+                 (speedup_position +5, tc_height + 100))
+    dealer1PE = Sensor((speedup_position-10, tc_height - 100),
+                 (speedup_position-10, tc_height + 30), 
+                 1, 
+                 space, 
+                 8,
+                 (speedup_position -10, tc_height + 190))
     speed2   = SpeedupWheel((dealer2_position, deck2_start_y),15, space)
+    pe3 = Sensor((dealer2_position+5, deck2_start_y - 100),
+                 (dealer2_position+5, deck2_start_y + 30), 
+                 1, 
+                 space, 
+                 9,
+                 (dealer2_position +5, deck2_start_y + 50))
+    dealer2PE = Sensor((dealer2_position-10, deck2_start_y - 100),
+                 (dealer2_position-10, deck2_start_y + 30), 
+                 1, 
+                 space, 
+                 10,
+                 (dealer2_position -5, deck2_start_y + 50))
+
+    pinchPE = Sensor((deck2_end_x - 20, deck2_end_y - 100),
+                     (deck2_end_x -20, deck2_end_y + 100),
+                     1,
+                     space,
+                     12,
+                     (deck2_end_x -10, deck2_end_y -100))
+
+    boardGenPE = Sensor((50, tc_height-50),
+                        (50, tc_height+50),
+                        board_width,
+                        space,
+                        13,
+                        (50, tc_height-100))
+
+    deck2fullPe = Sensor((dealer2_position - (30*scale), deck2_start_y-100),
+                         (dealer2_position - (30*scale), deck2_start_y+100),
+                         4,
+                         space,
+                         14,
+                         (dealer2_position + (20*scale), deck2_start_y-100))
+
+    deck2StopPe = Sensor((dealer2_position + (30*scale), deck2_start_y-100),
+                         (dealer2_position + (30*scale), deck2_start_y+100),
+                         4,
+                         space,
+                         15,
+                         (dealer2_position + (30*scale), deck2_start_y-100))
+    PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,pe1,dealer1PE,dealer2PE ]
+
     #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
 
     top_chain_handler            = space.add_collision_handler(1,2)
@@ -113,23 +168,79 @@ def run(window, width, height):
 
     pressed_pos = None
 
-    for x in range(0,6): 
-        boards.append(Board((x*board_width, tc_height-board_height), (0,0), space))
+    #for x in range(0,6): 
+        #boards.append(Board((x*board_width, tc_height-board_height), (0,0), space))
         #create_object(space, 10, (x * 70, tc_height-board_height))
 
     while run:
+        el = time.time()
+        #handle dealer 1
+        if not pe1.blocked:
+            speed1.stop.body.position = (speedup_position, tc_height)
+        if dealer1PE.blocked:
+            if not deck2fullPe.blocked:
+                if el - deck2fullPe.starttime > 2:
+                    allowdealer1.set(el)
+                    deck2fullPe.starttime = el
+        if allowdealer1.check(el):
+            speed1.stop.body.position = (speedup_position, tc_height+20)
+
+        #handle dealer 2
+        if not pe3.blocked:
+            speed2.stop.body.position = (dealer2_position, deck2_start_y)
+        if dealer2PE.blocked:
+            if not deck2StopPe.blocked:
+                if el - deck2StopPe.starttime > 2:
+                    allowdealer2.set(el)
+                    deck2StopPe.starttime = el
+        if allowdealer2.check(el):
+            speed2.stop.body.position = (dealer2_position, deck2_start_y +20)
+
+        #handle pinch
+        if pinchPE.blocked:
+            if el - pinchPE.starttime > .3: 
+                boards[0].removeBoard(space)
+                boards.pop(0)
+                pinchPE.starttime = el
+
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()    
         
+            
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pressed_pos = pygame.mouse.get_pos()
-                speed1.stop.body.position = (speedup_position, tc_height+20)
             if event.type == pygame.MOUSEBUTTONUP:
-                speed1.stop.body.position = (speedup_position, tc_height)
+            #    speed1.stop.body.position = (speedup_position, tc_height)
+                pass
 
-        draw(space,window, draw_options)
+        #handl boardGen
+        if not boardGenPE.blocked:
+            if el - boardGenPE.starttime > .3:
+                boards.append(Board((50, tc_height-board_height), (0,0), space))
+                boardGenPE.starttime = el
+
+
+   #     mouse_pressed = pygame.mouse.get_pressed()
+   #     if mouse_pressed[0]:
+   #         speed1.stop.body.position = (speedup_position, tc_height+20)
+
+        #draw(space,window, draw_options)
+        window.fill(white)
+        space.debug_draw(draw_options) 
+        for PE in PEs:
+            PE.update(el)
+            PE.draw_register(window)
+        #pe1.draw_register(window)
+        #dealer1PE.draw_register(window)
+        #pe3.draw_register(window)
+        #dealer2PE.draw_register(window)
+        #pinchPE.draw_register(window)
+        #deck2StopPe.draw_register(window)
+        #boardGenPE.draw_register(window)
+        pygame.display.update()
         space.step(dt)
         clock.tick(fps)
         

@@ -3,7 +3,6 @@ from limits import *
 #top chain stuff
 def top_chain_begin(arbiter, space, data):
     arbiter.shapes[0].body.velocity_func = limit_velocity_tc
-    print(arbiter)
     return True
 def top_chain_pre(arbiter, space, data):
     arbiter.shapes[0].body.apply_impulse_at_local_point((.5, 0),(0,0))
