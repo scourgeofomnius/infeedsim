@@ -208,7 +208,8 @@ def run(window, width, height):
                  [f"speed = {round(decline_max_speed/speed_scale)}ft/min",black]]
     deck2dealer_values = [["Deck2 Dealer Chains",black], 
                           [f"speed = {round(deck2_max_speed/speed_scale)}ft/min",black]]
-    pinch_values = [["PichRoll",black]]
+    pinch_values = [["PichRoll",black],
+                    [f"board process time: {board_process_time+.3}",red]]
     deck2_values = [["Deck 2 Short Chains",black], 
                     [f"speed = {round(deck2_max_speed/speed_scale)}ft/min",black]]
 
