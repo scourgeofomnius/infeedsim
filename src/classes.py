@@ -118,7 +118,7 @@ class Board:
         space.remove(self.shape)
 
 class Sensor:
-    def __init__(self, pos1, pos2, width, space, ctype, regpos):
+    def __init__(self, pos1, pos2, width, space, ctype, regpos, stopdebounce = 0.08, startdebounce = 0.08):
         self.width = width
         self.shape = pymunk.Segment(space.static_body, pos1, pos2, width)
         self.shape.sensor = True
@@ -138,6 +138,8 @@ class Sensor:
         self.pos = pos1
         self.starttime = time.time()
         self.stoptime = time.time()
+        self.startdebounce = startdebounce
+        self.stopdebounce = stopdebounce
 
     def draw_register(self, window):
         color = red if self.blocked else green
@@ -161,8 +163,8 @@ class Sensor:
         return True
 
     def update(self, el):
-        if el - self.stoptime > .05:
+        if el - self.stoptime > self.startdebounce:
             self.blocked = False
-        else:
+        elif el - self.starttime > self.stopdebounce:
             self.blocked = True
 

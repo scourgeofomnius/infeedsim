@@ -1,7 +1,9 @@
 import pymunk
-tc_max_speed = 70
-deck2_max_speed = 50
-decline_max_speed = 120
+#64 /48 =1.3 gives the scale. this was taken from a time measurement across deck2
+scale = 1.4
+tc_max_speed = 70 * scale
+deck2_max_speed = 48 * scale
+decline_max_speed = 80 * scale
 speedup_max_speed = 120
 
 def limit_velocity_tc(body, gravity, damping, dt):

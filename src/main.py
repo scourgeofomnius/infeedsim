@@ -5,7 +5,7 @@ import math
 import sys
 import time
 
-from variables import *
+from timers import *
 from classes import *
 from cols import *
 
@@ -76,13 +76,29 @@ def run(window, width, height):
                  11)
 
     #create_belt(space)
-    tc       = Chain((-50, tc_height),(tc_width, tc_height), 10, space, 2)
-    decline  = Chain((decline_start_x,decline_start_y),(decline_end_x,decline_end_y), 10, space,6)
-    d2dealer = Chain((deck2dealer_start_x, deck2dealer_start_y),(deck2dealer_end_x, deck2dealer_end_y), 10, space,5)
-    d2       = Chain((deck2_start_x,deck2_start_y),(deck2_end_x,deck2_end_y), 10, space, 5)
+    tc       = Chain((-50, tc_height),
+                     (tc_width, tc_height), 
+                     10, 
+                     space, 
+                     2)
+    decline  = Chain((decline_start_x,decline_start_y),
+                     (decline_end_x,decline_end_y), 
+                     10, 
+                     space,
+                     6)
+    d2dealer = Chain((deck2dealer_start_x, deck2dealer_start_y),
+                     (deck2dealer_end_x, deck2dealer_end_y), 
+                     10, 
+                     space,
+                     5)
+    d2       = Chain((deck2_start_x,deck2_start_y),
+                     (deck2_end_x,deck2_end_y), 
+                     10, 
+                     space, 
+                     5)
 
     speed1   = SpeedupWheel((speedup_position, tc_height),15, space)
-    pe1 = Sensor((speedup_position+8, tc_height - 100),
+    dealer1_Pe_after = Sensor((speedup_position+8, tc_height - 100),
                  (speedup_position+8, tc_height + 30), 
                  1, 
                  space, 
@@ -127,15 +143,17 @@ def run(window, width, height):
                          4,
                          space,
                          14,
-                         (dealer2_position + (20*scale), deck2_start_y-100))
+                         (dealer2_position + (20*scale), deck2_start_y-100),
+                         stopdebounce=deck2dealerfull_delay)
 
     deck2StopPe = Sensor((dealer2_position + (30*scale), deck2_start_y-100),
                          (dealer2_position + (30*scale), deck2_start_y+100),
                          4,
                          space,
                          15,
-                         (dealer2_position + (30*scale), deck2_start_y-100))
-    PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,pe1,dealer1PE,dealer2PE ]
+                         (dealer2_position + (30*scale), deck2_start_y-100),
+                         stopdebounce=deck2full_delay)
+    PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE ]
 
     #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
 
@@ -171,17 +189,18 @@ def run(window, width, height):
     #for x in range(0,6): 
         #boards.append(Board((x*board_width, tc_height-board_height), (0,0), space))
         #create_object(space, 10, (x * 70, tc_height-board_height))
+    startcheck = True
+    checkspeed1 = time.time()
+    endcheck = True
 
     while run:
         el = time.time()
         #handle dealer 1
-        if not pe1.blocked:
+        if not dealer1_Pe_after.blocked:
             speed1.stop.body.position = (speedup_position, tc_height)
         if dealer1PE.blocked:
             if not deck2fullPe.blocked:
-                if el - deck2fullPe.starttime > 2:
-                    allowdealer1.set(el)
-                    deck2fullPe.starttime = el
+                allowdealer1.set(el)
         if allowdealer1.check(el):
             speed1.stop.body.position = (speedup_position, tc_height+20)
 
@@ -190,15 +209,13 @@ def run(window, width, height):
             speed2.stop.body.position = (dealer2_position, deck2_start_y)
         if dealer2PE.blocked:
             if not deck2StopPe.blocked:
-                if el - deck2StopPe.starttime > 2:
-                    allowdealer2.set(el)
-                    deck2StopPe.starttime = el
+                allowdealer2.set(el)
         if allowdealer2.check(el):
             speed2.stop.body.position = (dealer2_position, deck2_start_y +20)
 
         #handle pinch
         if pinchPE.blocked:
-            if el - pinchPE.starttime > .3: 
+            if el - pinchPE.starttime > .3+ board_process_time: 
                 boards[0].removeBoard(space)
                 boards.pop(0)
                 pinchPE.starttime = el
@@ -222,24 +239,24 @@ def run(window, width, height):
                 boards.append(Board((50, tc_height-board_height), (0,0), space))
                 boardGenPE.starttime = el
 
+        if len(boards) > 0:
+            if startcheck:
+                if boards[0].body.position[0] > decline_start_x:
+                    checkspeed1 = time.time()
+                    startcheck = False
+            if endcheck:
+                if boards[0].body.position[0] > decline_end_x:
+                    print(f"time to deck2dealer {(85 /(time.time() - checkspeed1))*5}")
+                    endcheck = False
 
-   #     mouse_pressed = pygame.mouse.get_pressed()
-   #     if mouse_pressed[0]:
-   #         speed1.stop.body.position = (speedup_position, tc_height+20)
 
-        #draw(space,window, draw_options)
         window.fill(white)
         space.debug_draw(draw_options) 
+
         for PE in PEs:
             PE.update(el)
             PE.draw_register(window)
-        #pe1.draw_register(window)
-        #dealer1PE.draw_register(window)
-        #pe3.draw_register(window)
-        #dealer2PE.draw_register(window)
-        #pinchPE.draw_register(window)
-        #deck2StopPe.draw_register(window)
-        #boardGenPE.draw_register(window)
+
         pygame.display.update()
         space.step(dt)
         clock.tick(fps)
