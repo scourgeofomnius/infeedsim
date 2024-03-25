@@ -1,4 +1,5 @@
 import pymunk
+from collections import OrderedDict
 import pygame
 import time
 pygame.init()
@@ -41,7 +42,7 @@ class Debounce:
         return True
         
 class Stop:
-    def __init__(self, pos, dims,space):
+    def __init__(self, pos, dims,space, downtime=.18, uptime=.5):
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
         self.body.position = pos
         self.shape = pymunk.Poly.create_box(self.body, size=(dims))
@@ -49,6 +50,30 @@ class Stop:
         self.shape.body.friction = mu
         self.shape.collision_type=4
         space.add(self.body, self.shape)
+        self.starttime = time.time()
+        self.dealtime = time.time()
+        self.startpos = pos
+        self.downtime = downtime
+        self.uptime = uptime
+        self.state = "up"
+
+    def deal(self, el):
+        if self.state == "up":
+            if el-self.starttime > self.uptime:
+                self.body.position = (self.startpos[0], self.startpos[1]+20)
+                self.state = "down"
+                self.starttime = el
+
+        if self.state == "down":
+            if el - self.starttime > self.downtime:
+                self.body.position = (self.startpos[0], self.startpos[1])
+                self.state = "up"
+                self.starttime = el
+
+            
+    def stop(self, el):
+        self.body.position = (self.startpos[0], self.startpos[1])
+
 
 class Chain:
     def __init__(self, pos1, pos2, width, space, ctype):
@@ -167,4 +192,28 @@ class Sensor:
             self.blocked = False
         elif el - self.starttime > self.stopdebounce:
             self.blocked = True
+
+class TextRegister:
+    def __init__(self, pos, color, data):
+        self.pos = pos
+        self.color = color
+        self.font = font
+        self.data = data
+        self.data_register = [x for x in self.data]
+
+    def drawRegister(self, window):
+        for k,v  in enumerate(self.data_register):
+            window.blit(font.render(v[0], True, v[1]), (self.pos[0], self.pos[1] + (k * 20)))
+
+    def appendRegister(self, text,color=black):
+        self.data_register.append(text)
+
+    def clearRegister(self):
+        self.data_register = [x for x in self.data]
+
+
+
+
+
+
 

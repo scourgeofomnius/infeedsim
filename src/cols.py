@@ -44,7 +44,7 @@ def speedup_begin(arbiter, space, data):
     arbiter.shapes[0].body.velocity_func = limit_velocity_speedup
     return True
 def speedup_pre(arbiter, space, data):
-    arbiter.shapes[0].body.apply_impulse_at_local_point((20, 0),(0,0))
+    arbiter.shapes[0].body.apply_impulse_at_local_point((30, 0),(0,0))
     return True
 def speedup_post(arbiter, space, data):
     #print(velocity_at_local_point)

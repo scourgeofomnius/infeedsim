@@ -1,4 +1,5 @@
 import pygame
+from collections import OrderedDict
 import pymunk
 import pymunk.pygame_util
 import math
@@ -97,7 +98,8 @@ def run(window, width, height):
                      space, 
                      5)
 
-    speed1   = SpeedupWheel((speedup_position, tc_height),15, space)
+    speed1   = SpeedupWheel((speedup_position, tc_height+2),15, space)
+    speed1.stop.downtime = dealer_stop_downtime
     dealer1_Pe_after = Sensor((speedup_position+8, tc_height - 100),
                  (speedup_position+8, tc_height + 30), 
                  1, 
@@ -109,8 +111,13 @@ def run(window, width, height):
                  1, 
                  space, 
                  8,
-                 (speedup_position -10, tc_height + 190))
-    speed2   = SpeedupWheel((dealer2_position, deck2_start_y),15, space)
+                 (speedup_position -10, tc_height + 190),
+                 startdebounce=.1)
+
+    speed2   = SpeedupWheel((dealer2_position, deck2_start_y+2),
+                            15, 
+                            space)
+    speed2.stop.downtime = dealer_stop_downtime
     pe3 = Sensor((dealer2_position+5, deck2_start_y - 100),
                  (dealer2_position+5, deck2_start_y + 30), 
                  1, 
@@ -122,7 +129,8 @@ def run(window, width, height):
                  1, 
                  space, 
                  10,
-                 (dealer2_position -5, deck2_start_y + 50))
+                 (dealer2_position -5, deck2_start_y + 50),
+                 startdebounce=.1)
 
     pinchPE = Sensor((deck2_end_x - 20, deck2_end_y - 100),
                      (deck2_end_x -20, deck2_end_y + 100),
@@ -193,25 +201,62 @@ def run(window, width, height):
     checkspeed1 = time.time()
     endcheck = True
 
+    tc_values = [["Top Chain", black], 
+                 [f"speed = {round(tc_max_speed/speed_scale)}ft/min", black]]
+
+    dc_values = [["Decline Belt", black], 
+                 [f"speed = {round(decline_max_speed/speed_scale)}ft/min",black]]
+    deck2dealer_values = [["Deck2 Dealer Chains",black], 
+                          [f"speed = {round(deck2_max_speed/speed_scale)}ft/min",black]]
+    pinch_values = [["PichRoll",black]]
+    deck2_values = [["Deck 2 Short Chains",black], 
+                    [f"speed = {round(deck2_max_speed/speed_scale)}ft/min",black]]
+
+    tc_register = TextRegister((50, 600), black, tc_values)
+    decline_register = TextRegister((350, 600), black, dc_values)
+    deck2dealer_register = TextRegister((650, 600), black, deck2dealer_values)
+    pinch_register = TextRegister((950, 600), black, pinch_values)
+    deck2_register = TextRegister((1250, 600), black, deck2_values)
+    dist1 = TextRegister((70*scale, 30), black, [[f"{round(70/12)}ft",red]])
+    dist2 = TextRegister((decline_end_x, 30), black, [[f"{round((decline_end_x/scale)/12)}ft",red]])
+    dist3 = TextRegister((deck2dealer_end_x, 30), black, [[f"{round((deck2dealer_end_x/scale)/12)}ft",red]])
+    dist4 = TextRegister((deck2_end_x, 30), black, [[f"{round((deck2_end_x/scale)/12)}ft",red]])
+
+    regs = [tc_register, 
+            decline_register, 
+            deck2dealer_register, 
+            pinch_register,
+            deck2_register,
+            dist1,
+            dist2,
+            dist3,
+            dist4]
+
+
+
     while run:
         el = time.time()
         #handle dealer 1
-        if not dealer1_Pe_after.blocked:
-            speed1.stop.body.position = (speedup_position, tc_height)
-        if dealer1PE.blocked:
-            if not deck2fullPe.blocked:
-                allowdealer1.set(el)
-        if allowdealer1.check(el):
-            speed1.stop.body.position = (speedup_position, tc_height+20)
+        for r in regs:
+            r.clearRegister()
+
+        if dealer1PE.blocked and not deck2fullPe.blocked:
+            speed1.stop.deal(el)
+        if speed1.stop.state == "down":
+            speed1.stop.deal(el)
+            tc_register.appendRegister(["Dealing",green])
+        else:
+            tc_register.appendRegister(["Waiting",red])
+
 
         #handle dealer 2
-        if not pe3.blocked:
-            speed2.stop.body.position = (dealer2_position, deck2_start_y)
-        if dealer2PE.blocked:
-            if not deck2StopPe.blocked:
-                allowdealer2.set(el)
-        if allowdealer2.check(el):
-            speed2.stop.body.position = (dealer2_position, deck2_start_y +20)
+        if dealer2PE.blocked and not deck2StopPe.blocked:
+            speed2.stop.deal(el)
+        if speed2.stop.state == "down":
+            speed2.stop.deal(el)
+            deck2dealer_register.appendRegister(["Dealing",green])
+        else:
+            deck2dealer_register.appendRegister(["Waiting",red])
 
         #handle pinch
         if pinchPE.blocked:
@@ -256,6 +301,9 @@ def run(window, width, height):
         for PE in PEs:
             PE.update(el)
             PE.draw_register(window)
+
+        for r in regs:
+            r.drawRegister(window)
 
         pygame.display.update()
         space.step(dt)
