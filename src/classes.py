@@ -125,7 +125,7 @@ class Board:
         self.shape = pymunk.Poly.create_box(self.body, size = (board_width,board_height))
         self.shape.mass = 1
         self.shape.color = (222,174,91,100)
-        self.shape.body.friction = 0
+        self.shape.body.friction = .3
         self.shape.collision_type = 1
         space.add(self.body,self.shape)
         self.start = time.time()

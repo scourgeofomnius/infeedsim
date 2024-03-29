@@ -1,9 +1,9 @@
 import math
-mu = 2
+mu = .3
 WIDTH, HEIGHT = 1920,800
 #total length of sim in 242" 1920/242 = 7.9.   7.9px per inch
 scale = WIDTH / 300
-board_width = 3.5 * scale
+board_width = 5.5 * scale
 board_height = 1.5 * scale
 white = (255, 255, 255)
 green = (0, 255, 0)
@@ -34,5 +34,5 @@ deck2_end_y = deck2_start_y
 speedup_position = tc_width - (18 * scale)
 dealer2_position = deck2_end_x - (45 * scale)
 
-boardqwidth = 8
+boardqwidth = 14
    
