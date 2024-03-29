@@ -6,6 +6,7 @@ import math
 import sys
 import time
 
+from variables import *
 from timers import *
 from classes import *
 from cols import *
@@ -19,25 +20,6 @@ WIDTH, HEIGHT = 1920,800
 scale = WIDTH / 300
 mu = 2
 objects = []
-
-tc_height = 200
-tc_width = 70 * scale
-decline_angle = 180 - 23.4
-decline_length = 69*scale
-decline_start_y = tc_height
-decline_end_y = (-1*(int(decline_length*math.sin(decline_angle)))) + tc_height
-decline_start_x = tc_width
-decline_end_x = decline_length + tc_width
-deck2dealer_start_x = decline_end_x
-deck2dealer_start_y = decline_end_y
-deck2dealer_end_x = deck2dealer_start_x + int((85 * scale))
-deck2dealer_end_y = deck2dealer_start_y
-deck2_end_x = deck2dealer_end_x + int((45*scale))
-deck2_start_y = deck2dealer_end_y
-deck2_start_x = deck2dealer_end_x
-deck2_end_y = deck2_start_y
-speedup_position = tc_width - (18 * scale)
-dealer2_position = deck2_end_x - (45 * scale)
 
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Kinematics approximation ")
@@ -82,6 +64,11 @@ def run(window, width, height):
                      10, 
                      space, 
                      2)
+    t2       = Chain((-50, tc_height-4),
+                     (speedup_position - (2*scale), tc_height-4), 
+                     10, 
+                     space, 
+                     2)
     decline  = Chain((decline_start_x,decline_start_y),
                      (decline_end_x,decline_end_y), 
                      10, 
@@ -92,6 +79,11 @@ def run(window, width, height):
                      10, 
                      space,
                      5)
+    d2d2 = Chain((deck2dealer_start_x - (3*scale), deck2dealer_start_y-4),
+                     (dealer2_position - (2*scale), deck2dealer_end_y-4), 
+                     10, 
+                     space,
+                     5)
     d2       = Chain((deck2_start_x,deck2_start_y),
                      (deck2_end_x,deck2_end_y), 
                      10, 
@@ -99,9 +91,9 @@ def run(window, width, height):
                      5)
 
     speed1   = SpeedupWheel((speedup_position, tc_height+2),15, space)
-    speed1.stop.downtime = dealer_stop_downtime
-    dealer1_Pe_after = Sensor((speedup_position+8, tc_height - 100),
-                 (speedup_position+8, tc_height + 30), 
+    speed1.stop.downtime = dealer_stop_downtime1
+    dealer1_Pe_after = Sensor((speedup_position+(8*scale), tc_height - 100),
+                 (speedup_position+(8*scale), tc_height + 30), 
                  1, 
                  space, 
                  7,
@@ -118,8 +110,8 @@ def run(window, width, height):
                             15, 
                             space)
     speed2.stop.downtime = dealer_stop_downtime
-    pe3 = Sensor((dealer2_position+5, deck2_start_y - 100),
-                 (dealer2_position+5, deck2_start_y + 30), 
+    pe3 = Sensor((dealer2_position+(8*scale), deck2_start_y - 100),
+                 (dealer2_position+(8*scale), deck2_start_y + 30), 
                  1, 
                  space, 
                  9,
@@ -146,8 +138,8 @@ def run(window, width, height):
                         13,
                         (50, tc_height-100))
 
-    deck2fullPe = Sensor((dealer2_position - (30*scale), deck2_start_y-100),
-                         (dealer2_position - (30*scale), deck2_start_y+100),
+    deck2fullPe = Sensor((dealer2_position - (45*scale), deck2_start_y-100),
+                         (dealer2_position - (45*scale), deck2_start_y+100),
                          4,
                          space,
                          14,
@@ -161,7 +153,9 @@ def run(window, width, height):
                          15,
                          (dealer2_position + (30*scale), deck2_start_y-100),
                          stopdebounce=deck2full_delay)
-    PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE ]
+
+
+    PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE]
 
     #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
 
@@ -222,7 +216,12 @@ def run(window, width, height):
     dist2 = TextRegister((decline_end_x, 30), black, [[f"{round((decline_end_x/scale)/12)}ft",red]])
     dist3 = TextRegister((deck2dealer_end_x, 30), black, [[f"{round((deck2dealer_end_x/scale)/12)}ft",red]])
     dist4 = TextRegister((deck2_end_x, 30), black, [[f"{round((deck2_end_x/scale)/12)}ft",red]])
+    
 
+
+
+    boardq = []
+    boardreg = TextRegister((30, 30), black, [[str(len(boardq)),blue]])
     regs = [tc_register, 
             decline_register, 
             deck2dealer_register, 
@@ -231,8 +230,9 @@ def run(window, width, height):
             dist1,
             dist2,
             dist3,
-            dist4]
-
+            dist4,
+            boardreg
+            ]
 
 
     while run:
@@ -242,7 +242,10 @@ def run(window, width, height):
             r.clearRegister()
 
         if dealer1PE.blocked and not deck2fullPe.blocked:
-            speed1.stop.deal(el)
+            if len(boardq) < boardqwidth:
+                speed1.stop.deal(el)
+        if dealer1_Pe_after.osf(True):
+            boardq.append(1)
         if speed1.stop.state == "down":
             speed1.stop.deal(el)
             tc_register.appendRegister(["Dealing",green])
@@ -302,6 +305,16 @@ def run(window, width, height):
         for PE in PEs:
             PE.update(el)
             PE.draw_register(window)
+
+        #Osr must called right after update
+        if pe3.osf(True):
+            if len(boardq) > 0:
+                boardq.pop()
+        
+        if deck2fullPe.blocked:
+            boardq = [x for x in range(9)]
+
+        boardreg.changeRegister([str(len(boardq)), blue])
 
         for r in regs:
             r.drawRegister(window)

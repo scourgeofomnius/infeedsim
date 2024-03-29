@@ -2,22 +2,12 @@ import pymunk
 from collections import OrderedDict
 import pygame
 import time
+from variables import *
+
 pygame.init()
 default_font = pygame.font.get_default_font()
 font = pygame.font.Font(default_font, 20)
-mu = 2
-WIDTH, HEIGHT = 1920,800
-#total length of sim in 242" 1920/242 = 7.9.   7.9px per inch
-scale = WIDTH / 300
-board_width = 5.5 * scale
-board_height = 2.5 * scale
-white = (255, 255, 255)
-green = (0, 255, 0)
-blue = (0, 0, 128)
-black = (0,0,0)
-grey = (110,110,110)
-red = (255,0,0)
-yellow = (252,228,13)
+
 class Debounce:
     def __init__(self, dt, dtoff=.08):
         self.starttime = time.time()
@@ -73,6 +63,8 @@ class Stop:
             
     def stop(self, el):
         self.body.position = (self.startpos[0], self.startpos[1])
+        
+
 
 
 class Chain:
@@ -133,7 +125,7 @@ class Board:
         self.shape = pymunk.Poly.create_box(self.body, size = (board_width,board_height))
         self.shape.mass = 1
         self.shape.color = (222,174,91,100)
-        self.shape.body.friction = mu
+        self.shape.body.friction = 0
         self.shape.collision_type = 1
         space.add(self.body,self.shape)
         self.start = time.time()
@@ -165,6 +157,7 @@ class Sensor:
         self.stoptime = time.time()
         self.startdebounce = startdebounce
         self.stopdebounce = stopdebounce
+        self.previous = False
 
     def draw_register(self, window):
         color = red if self.blocked else green
@@ -188,10 +181,23 @@ class Sensor:
         return True
 
     def update(self, el):
+        self.previous = self.blocked
         if el - self.stoptime > self.startdebounce:
             self.blocked = False
         elif el - self.starttime > self.stopdebounce:
             self.blocked = True
+
+
+    def osr(self, value):
+        if self.blocked == True and self.previous == False:
+            return True
+        return False
+
+    def osf(self, value):
+        if self.blocked == False and self.previous == True:
+            return True
+        return False
+
 
 class TextRegister:
     def __init__(self, pos, color, data):
@@ -211,6 +217,8 @@ class TextRegister:
     def clearRegister(self):
         self.data_register = [x for x in self.data]
 
+    def changeRegister(self, value):
+        self.data_register = [value]
 
 
 
