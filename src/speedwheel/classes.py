@@ -1,6 +1,6 @@
 import pymunk
-from collections import OrderedDict
 import pygame
+import pymunk.pygame_util
 import time
 from variables import *
 from limits import *
@@ -8,39 +8,67 @@ from limits import *
 pygame.init()
 default_font = pygame.font.get_default_font()
 font = pygame.font.Font(default_font, 20)
+fps = 240
+mu = 2
 
-class Debounce:
-    def __init__(self, dt, dtoff=.08):
-        self.starttime = time.time()
-        self.stoptime = time.time()
-        self.state = False
-        self.dt = dt
-        self.dtoff = dtoff
-        
-    def check(self, el):
-        if self.state:
-            if el - self.starttime > self.dt:
-                self.state = False
-                self.stoptime = el
-            return True 
+class Chain:
+    def __init__(self, pos1, pos2, width, space, ctype):
+        self.width = width
+        self.shape = pymunk.Segment(space.static_body, pos1, pos2, width)
+        self.shape.body.position = 0,0
+        self.shape.friction = mu
+        self.shape.collision_type = ctype
+        space.add(self.shape)
+        self.handler = space.add_collision_handler(1,self.shape.collision_type)
+        self.handler.begin = self._begin
+        self.handler.pre_solve = self._pre
+        self.handler.post_solve = self._post
+        self.handler.separate = self._separate
 
-    def set(self, el):
-        if not self.state:
-            if el - self.stoptime > self.dtoff:
-                self.state = True
-                self.starttime = el
-                return False
+    def _begin(self, arbiter, space, data):
+        arbiter.shapes[0].body.velocity_func = limit_velocity_deck2
         return True
-        
+    def _pre(self, arbiter, space, data):
+        arbiter.shapes[0].body.apply_impulse_at_local_point((2*fps, 0),(0,0))
+        return True
+    def _post(self, arbiter, space, data):
+        #print(velocity_at_local_point)
+        pass
+    def _separate(self, arbiter, space, data):
+        pass
+
+class Board:
+    def __init__(self, pos, dims, space):
+        self.body = pymunk.Body(body_type = pymunk.Body.DYNAMIC)
+        self.body.position = pos
+        self.shape = pymunk.Poly.create_box(self.body, size = (board_width,board_height))
+        self.shape.mass = 1
+        self.shape.density = 1
+        self.shape.color = (222,174,91,100)
+        self.shape.body.friction = 1
+        self.shape.collision_type = 1
+        space.add(self.body,self.shape)
+        self.start = time.time()
+
+    def removeBoard(self, space):
+        space.remove(self.body)
+        space.remove(self.shape)
+
+
 class Stop:
     def __init__(self, pos, dims,space, downtime=.18, uptime=.5):
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
         self.body.position = pos
         self.shape = pymunk.Poly.create_box(self.body, size=(dims))
         self.shape.color=(0,0,0,100)
-        self.shape.body.friction = mu
+        self.shape.body.friction = 1
         self.shape.collision_type=4
         space.add(self.body, self.shape)
+        self.handler = space.add_collision_handler(1,self.shape.collision_type)
+        self.handler.begin = self._begin
+        self.handler.pre_solve = self._pre
+        self.handler.post_solve = self._post
+        self.handler.separate = self._separate
         self.starttime = time.time()
         self.dealtime = time.time()
         self.startpos = pos
@@ -64,88 +92,48 @@ class Stop:
             
     def stop(self, el):
         self.body.position = (self.startpos[0], self.startpos[1])
-        
 
-
-
-class Chain:
-    def __init__(self, pos1, pos2, width, space, ctype):
-        self.width = width
-        self.shape = pymunk.Segment(space.static_body, pos1, pos2, width)
-        self.shape.body.position = 0,0
-        self.shape.friction = mu
-        self.shape.collision_type = ctype
-        space.add(self.shape)
-
-class Chain2:
-    def __init__(self, pos1, pos2, height, space, ctype, surfaceVelo):
-        self.body = pymunk.Body(body_type = pymunk.Body.KINEMATIC)
-        self.body.position = pos1
-        print(pos2[0]-pos1[0])
-        print(f'height {pos2[1]-pos1[1]}')
-        self.shape = pymunk.Poly.create_box(self.body, size = (pos2[0]-pos1[0], height))
-        self.shape.friction = mu
-        self.shape.collision_type = ctype
-        self.shape.surface_velocity = surfaceVelo
-        space.add(self.body,self.shape)
-        
-class Wall:
-    def __init__(self, pos1, pos2, width, space, ctype):
-        self.width = width
-        self.shape = pymunk.Segment(space.static_body, pos1, pos2, width)
-        self.shape.body.position = 0,0
-        self.shape.friction = mu
-        self.shape.collision_type = ctype
-        space.add(self.shape)
-        self.handler = space.add_collision_handler(1,self.shape.collision_type)
-        self.handler.begin = self._begin
-        self.handler.pre_solve = self._pre
-        self.handler.post_solve = self._post
-        self.handler.separate = self._separate
-        self.starttime = time.time()
-        self.allowpinch = False
-        
-#top chain stuff
     def _begin(self, arbiter, space, data):
-        self.starttime = time.time()
         return True
     def _pre(self, arbiter, space, data):
-        if self.starttime - time.time() > .3:
-            self.allowpinch = True
         return True
     def _post(self, arbiter, space, data):
         #print(velocity_at_local_point)
         pass
     def _separate(self, arbiter, space, data):
-        self.allowpinch = False
         pass
+
 
 class SpeedupWheel:
     def __init__(self, pos, radius, space):
-        self.body  = pymunk.Body(body_type=pymunk.Body.STATIC)
+        self.rotation_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        self.body  = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
         self.body.position = pos
+        self.body.angular_velocity = 20
         self.shape = pymunk.Circle(self.body, radius, (0,0))
         self.shape.color = (255,94,0,100)
-        self.shape.friction = mu
+        self.shape.friction = 500
         self.shape.collision_type = 3
         space.add(self.body, self.shape)
-        self.stop = Stop(pos, (2,50), space)
-        
-class Board:
-    def __init__(self, pos, dims, space):
-        self.body = pymunk.Body(body_type = pymunk.Body.DYNAMIC)
-        self.body.position = pos
-        self.shape = pymunk.Poly.create_box(self.body, size = (board_width,board_height))
-        self.shape.mass = 1
-        self.shape.color = (222,174,91,100)
-        self.shape.body.friction = .3
-        self.shape.collision_type = 1
-        space.add(self.body,self.shape)
-        self.start = time.time()
+        self.handler = space.add_collision_handler(1,self.shape.collision_type)
+        self.handler.begin = self._begin
+        self.handler.pre_solve = self._pre
+        self.handler.post_solve = self._post
+        self.handler.separate = self._separate
+        self.stop = Stop(pos, (2,(radius*2+20)), space)
 
-    def removeBoard(self, space):
-        space.remove(self.body)
-        space.remove(self.shape)
+
+    def _begin(self, arbiter, space, data):
+        return True
+    def _pre(self, arbiter, space, data):
+        arbiter.shapes[0].body.velocity_func = limit_velocity_speedup
+        arbiter.shapes[0].body.apply_impulse_at_local_point((41*fps, 0),(0,0))
+        return True
+    def _post(self, arbiter, space, data):
+        #print(velocity_at_local_point)
+        pass
+    def _separate(self, arbiter, space, data):
+        pass
 
 class Sensor:
     def __init__(self, pos1, pos2, width, space, ctype, regpos, stopdebounce = 0.08, startdebounce = 0.08):
@@ -210,31 +198,5 @@ class Sensor:
         if self.blocked == False and self.previous == True:
             return True
         return False
-
-
-class TextRegister:
-    def __init__(self, pos, color, data):
-        self.pos = pos
-        self.color = color
-        self.font = font
-        self.data = data
-        self.data_register = [x for x in self.data]
-
-    def drawRegister(self, window):
-        for k,v  in enumerate(self.data_register):
-            window.blit(font.render(v[0], True, v[1]), (self.pos[0], self.pos[1] + (k * 20)))
-
-    def appendRegister(self, text,color=black):
-        self.data_register.append(text)
-
-    def clearRegister(self):
-        self.data_register = [x for x in self.data]
-
-    def changeRegister(self, value):
-        self.data_register = [value]
-
-
-
-
 
 

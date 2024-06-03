@@ -59,105 +59,42 @@ def run(window, width, height):
                  11)
 
     #create_belt(space)
-    tc       = Chain((-50, tc_height),
+    tc       = Chain2((-50, tc_height),
                      (tc_width, tc_height), 
                      10, 
                      space, 
-                     2)
-    t2       = Chain((-50, tc_height-4),
+                     2,
+                     (40, 0))
+    t2       = Chain2((-50, tc_height-4),
                      (speedup_position - (2*scale), tc_height-4), 
                      10, 
                      space, 
-                     2)
-    decline  = Chain((decline_start_x,decline_start_y),
+                     2,
+                     (40,0))
+    decline  = Chain2((decline_start_x,decline_start_y),
                      (decline_end_x,decline_end_y), 
                      10, 
                      space,
-                     6)
-    d2dealer = Chain((deck2dealer_start_x, deck2dealer_start_y),
-                     (deck2dealer_end_x, deck2dealer_end_y), 
+                     6,
+                     (75,0))
+#   d2dealer = Chain((deck2dealer_start_x, deck2dealer_start_y),
+#                     (deck2dealer_end_x, deck2dealer_end_y), 
+#                     10, 
+#                     space,
+#                     5)
+    d2d2 = Chain2((deck2dealer_start_x - (3*scale), deck2dealer_start_y),
+                     (dealer2_position - (2*scale), deck2dealer_end_y), 
                      10, 
                      space,
-                     5)
-    d2d2 = Chain((deck2dealer_start_x - (3*scale), deck2dealer_start_y-4),
-                     (dealer2_position - (2*scale), deck2dealer_end_y-4), 
-                     10, 
-                     space,
-                     5)
-    d2       = Chain((deck2_start_x,deck2_start_y),
+                     7,
+                     (100, 0))
+
+    d2       = Chain2((deck2_start_x,deck2_start_y),
                      (deck2_end_x,deck2_end_y), 
                      10, 
                      space, 
-                     5)
-
-    speed1   = SpeedupWheel((speedup_position, tc_height+2),15, space)
-    speed1.stop.downtime = dealer_stop_downtime1
-    dealer1_Pe_after = Sensor((speedup_position+(8*scale), tc_height - 100),
-                 (speedup_position+(8*scale), tc_height + 30), 
-                 1, 
-                 space, 
-                 7,
-                 (speedup_position +5, tc_height + 100))
-    dealer1PE = Sensor((speedup_position-10, tc_height - 100),
-                 (speedup_position-10, tc_height + 30), 
-                 1, 
-                 space, 
-                 8,
-                 (speedup_position -10, tc_height + 190),
-                 startdebounce=.1)
-
-    speed2   = SpeedupWheel((dealer2_position, deck2_start_y+2),
-                            15, 
-                            space)
-    speed2.stop.downtime = dealer_stop_downtime
-    pe3 = Sensor((dealer2_position+(8*scale), deck2_start_y - 100),
-                 (dealer2_position+(8*scale), deck2_start_y + 30), 
-                 1, 
-                 space, 
-                 9,
-                 (dealer2_position +5, deck2_start_y + 50))
-    dealer2PE = Sensor((dealer2_position-10, deck2_start_y - 100),
-                 (dealer2_position-10, deck2_start_y + 30), 
-                 1, 
-                 space, 
-                 10,
-                 (dealer2_position -5, deck2_start_y + 50),
-                 startdebounce=.1)
-
-    pinchPE = Sensor((deck2_end_x - 20, deck2_end_y - 100),
-                     (deck2_end_x -20, deck2_end_y + 100),
-                     1,
-                     space,
-                     12,
-                     (deck2_end_x -10, deck2_end_y -100))
-
-    boardGenPE = Sensor((50, tc_height-50),
-                        (50, tc_height+50),
-                        board_width,
-                        space,
-                        13,
-                        (50, tc_height-100))
-
-    deck2fullPe = Sensor((dealer2_position - (45*scale), deck2_start_y-100),
-                         (dealer2_position - (45*scale), deck2_start_y+100),
-                         4,
-                         space,
-                         14,
-                         (dealer2_position + (20*scale), deck2_start_y-100),
-                         stopdebounce=deck2dealerfull_delay)
-
-    deck2StopPe = Sensor((dealer2_position + (30*scale), deck2_start_y-100),
-                         (dealer2_position + (30*scale), deck2_start_y+100),
-                         4,
-                         space,
-                         15,
-                         (dealer2_position + (30*scale), deck2_start_y-100),
-                         stopdebounce=deck2full_delay)
-
-
-    PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE]
-
-    #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
+                     5,
+                     (100,0))
 
     top_chain_handler            = space.add_collision_handler(1,2)
     top_chain_handler.begin      = top_chain_begin
@@ -183,6 +120,81 @@ def run(window, width, height):
     decline_handler.post_solve = decline_post
     decline_handler.separate   = decline_separate
     
+    deck2_intermediate          = space.add_collision_handler(1,7)
+    deck2_intermediate.begin      = deck2_begin
+    deck2_intermediate.pre_solve  = deck2_pre
+    deck2_intermediate.post_solve = deck2_post
+    deck2_intermediate.separate   = deck2_separate
+
+
+    speed1   = SpeedupWheel((speedup_position, tc_height+2),15, space)
+    speed1.stop.downtime = dealer_stop_downtime1
+    dealer1_Pe_after = Sensor((speedup_position+(8*scale), tc_height - 100),
+                 (speedup_position+(8*scale), tc_height + 30), 
+                 1, 
+                 space, 
+                 7,
+                 (speedup_position +5, tc_height + 100))
+    dealer1PE = Sensor((speedup_position-10, tc_height - 100),
+                 (speedup_position-10, tc_height + 30), 
+                 1, 
+                 space, 
+                 8,
+                 (speedup_position -10, tc_height + 190),
+                 startdebounce=.1)
+
+#    speed2   = SpeedupWheel((dealer2_position, deck2_start_y+2),
+#                            15, 
+#                            space)
+#    speed2.stop.downtime = dealer_stop_downtime
+    pe3 = Sensor((dealer2_position+(8*scale), deck2_start_y - 100),
+                 (dealer2_position+(8*scale), deck2_start_y + 30), 
+                 1, 
+                 space, 
+                 9,
+                 (dealer2_position +5, deck2_start_y + 50))
+#    dealer2PE = Sensor((dealer2_position-10, deck2_start_y - 100),
+#                 (dealer2_position-10, deck2_start_y + 30), 
+#                 1, 
+#                 space, 
+#                 10,
+#                 (dealer2_position -5, deck2_start_y + 50),
+#                 startdebounce=.1)
+
+    pinchPE = Sensor((deck2_end_x - 20, deck2_end_y - 100),
+                     (deck2_end_x -20, deck2_end_y + 100),
+                     1,
+                     space,
+                     12,
+                     (deck2_end_x -10, deck2_end_y -100))
+
+    boardGenPE = Sensor((50, tc_height-50),
+                        (50, tc_height+50),
+                        board_width,
+                        space,
+                        13,
+                        (50, tc_height-100))
+
+    deck2fullPe = Sensor((dealer2_position - (10*scale), deck2_start_y-100),
+                         (dealer2_position - (10*scale), deck2_start_y+100),
+                         4,
+                         space,
+                         14,
+                         (dealer2_position + (20*scale), deck2_start_y-100),
+                         stopdebounce=deck2dealerfull_delay)
+
+    deck2StopPe = Sensor((dealer2_position + (30*scale), deck2_start_y-100),
+                         (dealer2_position + (30*scale), deck2_start_y+100),
+                         4,
+                         space,
+                         15,
+                         (dealer2_position + (30*scale), deck2_start_y-100),
+                         stopdebounce=deck2full_delay)
+
+
+    PEs = [pinchPE,deck2StopPe,deck2fullPe, boardGenPE,pe3,dealer1_Pe_after,dealer1PE]
+
+    #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
 
     draw_options = pymunk.pygame_util.DrawOptions(window)
 
@@ -195,8 +207,7 @@ def run(window, width, height):
     checkspeed1 = time.time()
     endcheck = True
 
-    tc_values = [["Top Chain", black], 
-                 [f"speed = {round(tc_max_speed/speed_scale)}ft/min", black]]
+    tc_values = [["Top Chain", black],      [f"speed = {round(tc_max_speed/speed_scale)}ft/min", black]]
 
     dc_values = [["Decline Belt", black], 
                  [f"speed = {round(decline_max_speed/speed_scale)}ft/min",black]]
@@ -242,8 +253,9 @@ def run(window, width, height):
             r.clearRegister()
 
         if dealer1PE.blocked and not deck2fullPe.blocked:
-            if len(boardq) < boardqwidth:
-                speed1.stop.deal(el)
+            speed1.stop.deal(el)
+ #           if len(boardq) < boardqwidth:
+ #               speed1.stop.deal(el)
         if dealer1_Pe_after.osf(True):
             boardq.append(1)
         if speed1.stop.state == "down":
@@ -253,14 +265,20 @@ def run(window, width, height):
             tc_register.appendRegister(["Waiting",red])
 
 
+        #if deck2StopPe.blocked:
+        #    deck2_intermediate.begin      = deck2_slowdown
+        #    print("limiting velocity")
+        #else:
+        #    deck2_intermediate.begin      = deck2_begin
+
         #handle dealer 2
-        if dealer2PE.blocked and not deck2StopPe.blocked:
-            speed2.stop.deal(el)
-        if speed2.stop.state == "down":
-            speed2.stop.deal(el)
-            deck2dealer_register.appendRegister(["Dealing",green])
-        else:
-            deck2dealer_register.appendRegister(["Waiting",red])
+ #       if dealer2PE.blocked and not deck2StopPe.blocked:
+ #           speed2.stop.deal(el)
+ #       if speed2.stop.state == "down":
+ #           speed2.stop.deal(el)
+ #           deck2dealer_register.appendRegister(["Dealing",green])
+ #       else:
+ #           deck2dealer_register.appendRegister(["Waiting",red])
 
         #handle pinch
         if pinchPE.blocked:
