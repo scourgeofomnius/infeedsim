@@ -41,6 +41,7 @@ def create_wall(space, x,y,width):
     shape.friction = mu
     space.add(shape)
 
+
 def run(window, width, height):
     run           = True
     clock         = pygame.time.Clock()
@@ -60,15 +61,15 @@ def run(window, width, height):
 
     #create_belt(space)
     tc       = Chain((-50, tc_height),
-                     (tc_width, tc_height), 
+                     (speedup_position, tc_height-3), 
                      10, 
                      space, 
                      2)
-    t2       = Chain((-50, tc_height-4),
-                     (speedup_position - (2*scale), tc_height-4), 
+    t2       = Chain((speedup_position, tc_height),
+                     (decline_start_x-2, tc_height), 
                      10, 
                      space, 
-                     2)
+                     19)
     decline  = Chain((decline_start_x,decline_start_y),
                      (decline_end_x,decline_end_y), 
                      10, 
@@ -79,19 +80,74 @@ def run(window, width, height):
                      10, 
                      space,
                      5)
-    d2d2 = Chain((deck2dealer_start_x - (3*scale), deck2dealer_start_y-4),
-                     (dealer2_position - (2*scale), deck2dealer_end_y-4), 
-                     10, 
-                     space,
-                     5)
+#    d2d2 = Chain((deck2dealer_start_x - (3*scale), deck2dealer_start_y-4),
+#                     (dealer2_position - (2*scale), deck2dealer_end_y-4), 
+#                     10, 
+#                     space,
+#                     5)
     d2       = Chain((deck2_start_x,deck2_start_y),
                      (deck2_end_x,deck2_end_y), 
                      10, 
                      space, 
-                     5)
+                     16)
+    
+    #declineStop = Chain((declinestop_start_x, declinestop_start_y),
+    #                 (declinestop_end_x, declinestop_end_y), 
+    #                 10, 
+    #                 space,
+    #                 20)
+    #declineStop2 = Chain((declinestop_end_x-2, declinestop_start_y),
+    #                 (declinestop_end_x+35, decline_end_y), 
+    #                 10, 
+    #                 space,
+    #                 21)
+
+    top_chain_handler            = space.add_collision_handler(1,2)
+    top_chain_handler.begin      = top_chain_begin
+    top_chain_handler.pre_solve  = top_chain_pre
+    top_chain_handler.post_solve = top_chain_post
+    top_chain_handler.separate   = top_chain_separate
+
+    top2_chain_handler            = space.add_collision_handler(1,19)
+    top2_chain_handler.begin      = top2_chain_begin
+    top2_chain_handler.pre_solve  = top2_chain_pre
+    top2_chain_handler.post_solve = top2_chain_post
+    top2_chain_handler.separate   = top2_chain_separate
+    
+    deck2_handler            = space.add_collision_handler(1,5)
+    deck2_handler.begin      = deck2_begin
+    deck2_handler.pre_solve  = deck2_pre
+    deck2_handler.post_solve = deck2_post
+    deck2_handler.separate   = deck2_separate
+
+    speedup_handler            = space.add_collision_handler(1,3)
+    speedup_handler.begin      = speedup_begin
+    speedup_handler.pre_solve  = speedup_pre
+    speedup_handler.post_solve = speedup_post
+    speedup_handler.separate   = speedup_separate
+
+    decline_handler            = space.add_collision_handler(1,6)
+    decline_handler.begin      = decline_begin
+    decline_handler.pre_solve  = decline_pre
+    decline_handler.post_solve = decline_post
+    decline_handler.separate   = decline_separate
+
+    deck_short_chain_handler = space.add_collision_handler(1,16)
+    deck_short_chain_handler.begin      = deck2_begin
+    deck_short_chain_handler.pre_solve  = deck2_pre
+    deck_short_chain_handler.post_solve = deck2_post
+    deck_short_chain_handler.separate   = deck2_separate
+
+ 
+    declinestop_handler = space.add_collision_handler(1,20)
+    declinestop_handler.begin      = declinestop_begin
+    declinestop_handler.pre_solve  = declinestop_pre
+    declinestop_handler.post_solve = declinestop_post
+    declinestop_handler.separate   = declinestop_separate
 
     speed1   = SpeedupWheel((speedup_position, tc_height+2),15, space)
     speed1.stop.downtime = dealer_stop_downtime1
+    speed1.stop.uptime = .5
     dealer1_Pe_after = Sensor((speedup_position+(8*scale), tc_height - 100),
                  (speedup_position+(8*scale), tc_height + 30), 
                  1, 
@@ -106,16 +162,18 @@ def run(window, width, height):
                  (speedup_position -10, tc_height + 190),
                  startdebounce=.1)
 
-    speed2   = SpeedupWheel((dealer2_position, deck2_start_y+2),
-                            15, 
-                            space)
-    speed2.stop.downtime = dealer_stop_downtime
-    pe3 = Sensor((dealer2_position+(8*scale), deck2_start_y - 100),
-                 (dealer2_position+(8*scale), deck2_start_y + 30), 
-                 1, 
-                 space, 
-                 9,
-                 (dealer2_position +5, deck2_start_y + 50))
+#    speed2   = SpeedupWheel((dealer2_position, deck2_start_y+2),
+#                            15, 
+#                            space)
+#    speed2.stop.downtime = dealer_stop_downtime
+    #pe3 = Sensor((dealer2_position-(16*scale), deck2_start_y - 100),
+    #             (dealer2_position-(16*scale), deck2_start_y + 30), 
+    #             1, 
+    #             space, 
+    #             9,
+    #             (dealer2_position +5, deck2_start_y + 50),
+    #             stopdebounce=.1)
+
     dealer2PE = Sensor((dealer2_position-10, deck2_start_y - 100),
                  (dealer2_position-10, deck2_start_y + 30), 
                  1, 
@@ -138,13 +196,13 @@ def run(window, width, height):
                         13,
                         (50, tc_height-100))
 
-    deck2fullPe = Sensor((dealer2_position - (45*scale), deck2_start_y-100),
-                         (dealer2_position - (45*scale), deck2_start_y+100),
-                         4,
-                         space,
-                         14,
-                         (dealer2_position + (20*scale), deck2_start_y-100),
-                         stopdebounce=deck2dealerfull_delay)
+    #deck2fullPe = Sensor((dealer2_position - (85*scale), deck2_start_y-100),
+    #                     (dealer2_position - (85*scale), deck2_start_y+100),
+    #                     4,
+    #                     space,
+    #                     14,
+    #                     (dealer2_position + (20*scale), deck2_start_y-100),
+    #                     stopdebounce=deck2dealerfull_delay)
 
     deck2StopPe = Sensor((dealer2_position + (30*scale), deck2_start_y-100),
                          (dealer2_position + (30*scale), deck2_start_y+100),
@@ -155,34 +213,12 @@ def run(window, width, height):
                          stopdebounce=deck2full_delay)
 
 
-    PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE]
+    #PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE]
+    PEs = [pinchPE,deck2StopPe,boardGenPE,dealer1_Pe_after,dealer1PE]
 
     #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
 
-    top_chain_handler            = space.add_collision_handler(1,2)
-    top_chain_handler.begin      = top_chain_begin
-    top_chain_handler.pre_solve  = top_chain_pre
-    top_chain_handler.post_solve = top_chain_post
-    top_chain_handler.separate   = top_chain_separate
-    
-    deck2_handler            = space.add_collision_handler(1,5)
-    deck2_handler.begin      = deck2_begin
-    deck2_handler.pre_solve  = deck2_pre
-    deck2_handler.post_solve = deck2_post
-    deck2_handler.separate   = deck2_separate
-
-    speedup_handler            = space.add_collision_handler(1,3)
-    speedup_handler.begin      = speedup_begin
-    speedup_handler.pre_solve  = speedup_pre
-    speedup_handler.post_solve = speedup_post
-    speedup_handler.separate   = speedup_separate
-
-    decline_handler            = space.add_collision_handler(1,6)
-    decline_handler.begin      = decline_begin
-    decline_handler.pre_solve  = decline_pre
-    decline_handler.post_solve = decline_post
-    decline_handler.separate   = decline_separate
-    
+   
 
     draw_options = pymunk.pygame_util.DrawOptions(window)
 
@@ -235,15 +271,20 @@ def run(window, width, height):
             ]
 
 
+    keepdeclinerunning = time.time()
+    stopdecline = False
+    stopdeal = False
+
     while run:
         el = time.time()
         #handle dealer 1
         for r in regs:
             r.clearRegister()
 
-        if dealer1PE.blocked and not deck2fullPe.blocked:
-            if len(boardq) < boardqwidth:
-                speed1.stop.deal(el)
+        if dealer1PE.blocked and not deck2StopPe.blocked:
+            #if len(boardq) < boardqwidth:
+            #stopdeal = True
+            speed1.stop.deal(el)
         if dealer1_Pe_after.osf(True):
             boardq.append(1)
         if speed1.stop.state == "down":
@@ -252,15 +293,87 @@ def run(window, width, height):
         else:
             tc_register.appendRegister(["Waiting",red])
 
+        #if deck2StopPe.blocked:
+        #    stopdeal = True
 
+        #if stopdeal and pe3.osf(True):
+        #    stopdeal = False
+
+        #if not stopdeal:
+        #    speed1.stop.deal(el)
+
+
+        if deck2StopPe.osf(True):
+            keepdeclinerunning = time.time()
+            pass
+
+        if el - keepdeclinerunning > 1:
+            stopdecline = True
+
+        if stopdecline:
+            pass
+            #deck2_handler.begin      = intermediate_begin
+            #deck2_handler.pre_solve  = intermediate_pre
+            #deck2_handler.post_solve = intermediate_post
+            #deck2_handler.separate   = intermediate_separate
+        
+            #top_chain_handler.begin      = intermediate_begin
+            #top_chain_handler.pre_solve  = intermediate_pre
+            #top_chain_handler.post_solve = intermediate_post
+            #top_chain_handler.separate   = intermediate_separate
+            #top2_chain_handler.begin      = intermediate_begin
+            #top2_chain_handler.pre_solve  = intermediate_pre
+            #top2_chain_handler.post_solve = intermediate_post
+            #top2_chain_handler.separate   = intermediate_separate
+            
+            decline_handler.begin      = intermediate_begin
+            decline_handler.pre_solve  = intermediate_pre
+            decline_handler.post_solve = intermediate_post
+            decline_handler.separate   = intermediate_separate
+
+
+        if not deck2StopPe.blocked:
+            keepdeclinerunning = el
+            stopdecline = False
+
+
+        if deck2StopPe.osf(True):
+            stopdecline = False
+            deck2_handler.begin      = deck2_begin
+            deck2_handler.pre_solve  = deck2_pre
+            deck2_handler.post_solve = deck2_post
+            deck2_handler.separate   = deck2_separate
+
+            deck_short_chain_handler.begin = deck2_begin
+            deck_short_chain_handler.pre_solve  = deck2_pre
+            deck_short_chain_handler.post_solve = deck2_post
+            deck_short_chain_handler.separate   = deck2_separate
+        
+            decline_handler.begin      = decline_begin
+            decline_handler.pre_solve  = decline_pre
+            decline_handler.post_solve = decline_post
+            decline_handler.separate   = decline_separate
+
+            top_chain_handler.begin      = top_chain_begin
+            top_chain_handler.pre_solve  = top_chain_pre
+            top_chain_handler.post_solve = top_chain_post
+            top_chain_handler.separate   = top_chain_separate
+
+            top2_chain_handler.begin      = top2_chain_begin
+            top2_chain_handler.pre_solve  = top2_chain_pre
+            top2_chain_handler.post_solve = top2_chain_post
+            top2_chain_handler.separate   = top2_chain_separate
+ 
+
+ 
         #handle dealer 2
-        if dealer2PE.blocked and not deck2StopPe.blocked:
-            speed2.stop.deal(el)
-        if speed2.stop.state == "down":
-            speed2.stop.deal(el)
-            deck2dealer_register.appendRegister(["Dealing",green])
-        else:
-            deck2dealer_register.appendRegister(["Waiting",red])
+#        if dealer2PE.blocked and not deck2StopPe.blocked:
+#            speed2.stop.deal(el)
+#        if speed2.stop.state == "down":
+#            speed2.stop.deal(el)
+#            deck2dealer_register.appendRegister(["Dealing",green])
+#        else:
+#            deck2dealer_register.appendRegister(["Waiting",red])
 
         #handle pinch
         if pinchPE.blocked:
@@ -307,12 +420,12 @@ def run(window, width, height):
             PE.draw_register(window)
 
         #Osr must called right after update
-        if pe3.osf(True):
-            if len(boardq) > 0:
-                boardq.pop()
+        #if pe3.osf(True):
+        #    if len(boardq) > 0:
+        #        boardq.pop()
         
-        if deck2fullPe.blocked:
-            boardq = [x for x in range(9)]
+        #if deck2fullPe.blocked:
+        #    boardq = [x for x in range(9)]
 
         boardreg.changeRegister([str(len(boardq)), blue])
 
