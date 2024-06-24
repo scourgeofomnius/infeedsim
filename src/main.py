@@ -148,12 +148,12 @@ def run(window, width, height):
     speed1   = SpeedupWheel((speedup_position, tc_height+2),15, space)
     speed1.stop.downtime = dealer_stop_downtime1
     speed1.stop.uptime = .5
-    dealer1_Pe_after = Sensor((speedup_position+(8*scale), tc_height - 100),
-                 (speedup_position+(8*scale), tc_height + 30), 
-                 1, 
-                 space, 
-                 7,
-                 (speedup_position +5, tc_height + 100))
+#    dealer1_Pe_after = Sensor((speedup_position+(8*scale), tc_height - 100),
+#                 (speedup_position+(8*scale), tc_height + 30), 
+#                 1, 
+#                 space, 
+#                 7,
+#                 (speedup_position +5, tc_height + 100))
     dealer1PE = Sensor((speedup_position-10, tc_height - 100),
                  (speedup_position-10, tc_height + 30), 
                  1, 
@@ -212,9 +212,35 @@ def run(window, width, height):
                          (dealer2_position + (30*scale), deck2_start_y-100),
                          stopdebounce=deck2full_delay)
 
+    lugStartPe = LugSensor((decline_start_x + 80, decline_start_y -100),
+                         (decline_start_x + 80, decline_start_y +100),
+                         1,
+                         space,
+                         101,
+                         (0,0),
+                         stopdebounce=.01)
+
+
+    lugEndPe = LugSensor((decline_end_x, decline_end_y -100),
+                         (decline_end_x, decline_end_y +100),
+                         1,
+                         space,
+                         102,
+                         (0,0),
+                         stopdebounce=0)
+    dealerLugInterlockPe = LugSensor((decline_start_x+30, decline_start_y -100),
+                         (decline_start_x+30, decline_start_y +100),
+                         1,
+                         space,
+                         103,
+                         (0,0),
+                         stopdebounce=0)
+
+
+
 
     #PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE]
-    PEs = [pinchPE,deck2StopPe,boardGenPE,dealer1_Pe_after,dealer1PE]
+    PEs = [dealerLugInterlockPe,pinchPE,deck2StopPe,boardGenPE,dealer1PE,lugStartPe,lugEndPe]
 
     #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
 
@@ -275,18 +301,30 @@ def run(window, width, height):
     stopdecline = False
     stopdeal = False
 
+    lugs = []
+    lugPassedAllowDeal = True
     while run:
         el = time.time()
         #handle dealer 1
         for r in regs:
             r.clearRegister()
+        
+        #if el- lugStartPe.starttime > .1:
+        #    lugPassedAllowDeal = True
+        #    lugStartPe.starttime = el
 
-        if dealer1PE.blocked and not deck2StopPe.blocked:
+        if dealerLugInterlockPe.osr(True):
+            lugPassedAllowDeal = True
+            lugStartPe.starttime = el
+
+
+        if dealer1PE.blocked and not deck2StopPe.blocked and lugPassedAllowDeal:
             #if len(boardq) < boardqwidth:
             #stopdeal = True
             speed1.stop.deal(el)
-        if dealer1_Pe_after.osf(True):
-            boardq.append(1)
+            lugPassedAllowDeal = False
+        #if dealer1_Pe_after.osf(True):
+        #    boardq.append(1)
         if speed1.stop.state == "down":
             speed1.stop.deal(el)
             tc_register.appendRegister(["Dealing",green])
@@ -311,7 +349,6 @@ def run(window, width, height):
             stopdecline = True
 
         if stopdecline:
-            pass
             #deck2_handler.begin      = intermediate_begin
             #deck2_handler.pre_solve  = intermediate_pre
             #deck2_handler.post_solve = intermediate_post
@@ -331,6 +368,11 @@ def run(window, width, height):
             decline_handler.post_solve = intermediate_post
             decline_handler.separate   = intermediate_separate
 
+            for lug in lugs:
+                lug.stopLug()
+        else:
+            for lug in lugs:
+                lug.moveLug()
 
         if not deck2StopPe.blocked:
             keepdeclinerunning = el
@@ -401,6 +443,20 @@ def run(window, width, height):
                 boards.append(Board((50, tc_height-board_height), (0,0), space))
                 boardGenPE.starttime = el
 
+#        if not lugStartPe.blocked:
+#            if el -lugStartPe.starttime > 2:
+#                lugs.append(Lug((decline_start_x, decline_start_y-20),(0,0),space))
+#                lugStartPe.starttime = el
+
+        if lugStartPe.osr(True) or len(lugs) == 0:
+            lugs.append(Lug((decline_start_x-20, decline_start_y-20),(0,0),space))
+
+
+        if lugEndPe.osf(True):
+            if len(lugs)> 0:
+                lugs[0].removeLug(space)
+                lugs.pop(0)
+            
         if len(boards) > 0:
             if startcheck:
                 if boards[0].body.position[0] > decline_start_x:

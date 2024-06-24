@@ -8,7 +8,7 @@ dealer_stop_downtime = .25
 dealer_stop_downtime1 = .35
 deck2full_delay = .2
 deck2dealerfull_delay = .01
-board_process_time = 3.7
+board_process_time = .9
 
 
 

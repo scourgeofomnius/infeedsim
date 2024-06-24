@@ -35,7 +35,7 @@ def decline_begin(arbiter, space, data):
     return True
 def decline_pre(arbiter, space, data):
     arbiter.shapes[0].body.velocity_func = limit_velocity_decline
-    arbiter.shapes[0].body.apply_impulse_at_local_point((2.93, 0),(0,0))
+    #arbiter.shapes[0].body.apply_impulse_at_local_point((2.93, 0),(0,0))
     return True
 def decline_post(arbiter, space, data):
     arbiter.shapes[0].body.velocity_func = limit_velocity_decline

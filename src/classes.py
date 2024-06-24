@@ -109,7 +109,7 @@ class Wall:
 
 class SpeedupWheel:
     def __init__(self, pos, radius, space):
-        self.body  = pymunk.Body(body_type=pymunk.Body.STATIC)
+        self.body  = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
         self.body.position = pos
         self.shape = pymunk.Circle(self.body, radius, (0,0))
         self.shape.color = (255,94,0,100)
@@ -133,6 +133,96 @@ class Board:
     def removeBoard(self, space):
         space.remove(self.body)
         space.remove(self.shape)
+class Lug:
+    def __init__(self, pos, dims, space):
+        self.body = pymunk.Body(body_type = pymunk.Body.KINEMATIC)
+        self.body.position = pos
+        self.shape = pymunk.Poly.create_box(self.body, size = (10,20))
+        self.shape.mass = 1
+        self.shape.color = (57,57,57,100)
+        self.shape.body.friction = .3
+        self.shape.collision_type = 100
+        space.add(self.body,self.shape)
+        self.start = time.time()
+
+    def removeLug(self, space):
+        space.remove(self.body)
+        space.remove(self.shape)
+    
+    def moveLug(self):
+        self.body.velocity = (100,0)
+        if self.body.position[0] > decline_start_x:
+            self.body.angle = 15 * math.pi/180
+            self.body.velocity = (100,15.6)
+        #self.body.position = ()
+    def stopLug(self):
+        self.body.velocity = (0,0)
+
+class LugSensor:
+    def __init__(self, pos1, pos2, width, space, ctype, regpos, stopdebounce = 0.08, startdebounce = 0.08):
+        self.width = width
+        self.shape = pymunk.Segment(space.static_body, pos1, pos2, width)
+        self.shape.sensor = True
+        self.shape.color = (0,0,255,100)
+        self.shape.body.position = 0,0
+        self.shape.friction = mu
+        self.shape.collision_type = ctype
+        space.add(self.shape)
+        self.handler = space.add_collision_handler(100,self.shape.collision_type)
+        self.handler.begin = self._begin
+        self.handler.pre_solve = self._pre
+        self.handler.post_solve = self._post
+        self.handler.separate = self._separate
+        self.blocked = False
+        self.font = font
+        self.data_register = ["blocked"]
+        self.pos = pos1
+        self.starttime = time.time()
+        self.stoptime = time.time()
+        self.startdebounce = startdebounce
+        self.stopdebounce = stopdebounce
+        self.previous = False
+
+    def draw_register(self, window):
+        color = red if self.blocked else green
+        pygame.draw.circle(window, color, self.pos, 10, 5)
+        #window.blit(font.render("".join(self.data_register), True, color),(self.pos[0],self.pos[1]-100))
+
+    def clear_register(self):
+        self.data_register = []
+
+    def _begin(self, arbiter, space, data):
+        self.starttime = time.time()
+        return True
+    def _pre(self, arbiter, space, data):
+        self.stoptime = time.time()
+        return True
+    def _post(self, arbiter, space, data):
+        #print(velocity_at_local_point)
+        return True
+    def _separate(self, arbiter, space, data):
+        return True
+
+    def update(self, el):
+        self.previous = self.blocked
+        if el - self.stoptime > self.startdebounce:
+            self.blocked = False
+        elif el - self.starttime > self.stopdebounce:
+            self.blocked = True
+
+
+    def osr(self, value):
+        if self.blocked == True and self.previous == False:
+            return True
+        return False
+
+    def osf(self, value):
+        if self.blocked == False and self.previous == True:
+            return True
+        return False
+
+
+
 
 class Sensor:
     def __init__(self, pos1, pos2, width, space, ctype, regpos, stopdebounce = 0.08, startdebounce = 0.08):
