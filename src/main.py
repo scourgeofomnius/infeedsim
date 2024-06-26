@@ -7,7 +7,6 @@ import sys
 import time
 
 from variables import *
-from timers import *
 from classes import *
 from cols import *
 
@@ -15,11 +14,6 @@ from cols import *
 
 pygame.init()
 space = pymunk.Space()
-WIDTH, HEIGHT = 1920,800
-#total length of sim in 242" 1920/242 = 7.9.   7.9px per inch
-scale = WIDTH / 300
-mu = 2
-objects = []
 
 window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Kinematics approximation ")
@@ -147,7 +141,7 @@ def run(window, width, height):
 
     speed1   = SpeedupWheel((speedup_position, tc_height+2),15, space)
     speed1.stop.downtime = dealer_stop_downtime1
-    speed1.stop.uptime = .5
+    speed1.stop.uptime = dealer_stop_uptime
 #    dealer1_Pe_after = Sensor((speedup_position+(8*scale), tc_height - 100),
 #                 (speedup_position+(8*scale), tc_height + 30), 
 #                 1, 
@@ -212,8 +206,8 @@ def run(window, width, height):
                          (dealer2_position + (30*scale), deck2_start_y-100),
                          stopdebounce=deck2full_delay)
 
-    lugStartPe = LugSensor((decline_start_x + 80, decline_start_y -100),
-                         (decline_start_x + 80, decline_start_y +100),
+    lugStartPe = LugSensor((decline_start_x + 100, decline_start_y -100),
+                         (decline_start_x + 100, decline_start_y +100),
                          1,
                          space,
                          101,
@@ -228,8 +222,8 @@ def run(window, width, height):
                          102,
                          (0,0),
                          stopdebounce=0)
-    dealerLugInterlockPe = LugSensor((decline_start_x+30, decline_start_y -100),
-                         (decline_start_x+30, decline_start_y +100),
+    dealerLugInterlockPe = LugSensor((decline_start_x+70, decline_start_y -100),
+                         (decline_start_x+70, decline_start_y +100),
                          1,
                          space,
                          103,
@@ -456,7 +450,16 @@ def run(window, width, height):
             if len(lugs)> 0:
                 lugs[0].removeLug(space)
                 lugs.pop(0)
-            
+
+        lugdistance = 0
+        if len(lugs) > 2:
+            x1 = round(lugs[0].body.position[0])
+            x2 = round(lugs[1].body.position[0])
+            y1 = round(lugs[0].body.position[1])
+            y2 = round(lugs[1].body.position[1])
+            lugdistance = round(math.sqrt((x1-x2)**2 + (y2-y1)**2)/scale,0)
+
+        decline_register.appendRegister([str(lugdistance), blue])         
         if len(boards) > 0:
             if startcheck:
                 if boards[0].body.position[0] > decline_start_x:

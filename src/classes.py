@@ -3,7 +3,6 @@ from collections import OrderedDict
 import pygame
 import time
 from variables import *
-
 pygame.init()
 default_font = pygame.font.get_default_font()
 font = pygame.font.Font(default_font, 20)
@@ -125,7 +124,7 @@ class Board:
         self.shape = pymunk.Poly.create_box(self.body, size = (board_width,board_height))
         self.shape.mass = 1
         self.shape.color = (222,174,91,100)
-        self.shape.body.friction = .3
+        self.shape.body.friction = 1
         self.shape.collision_type = 1
         space.add(self.body,self.shape)
         self.start = time.time()
@@ -153,6 +152,10 @@ class Lug:
         self.body.velocity = (100,0)
         if self.body.position[0] > decline_start_x:
             self.body.angle = 15 * math.pi/180
+            self.body.velocity = (100,15.6)
+        if self.body.position[0] > decline_end_x:
+            self.body.position = (self.body.position[0], self.body.position[1] + .1)
+            self.body.angle = self.body.angle + 20
             self.body.velocity = (100,15.6)
         #self.body.position = ()
     def stopLug(self):
