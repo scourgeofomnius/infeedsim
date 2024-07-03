@@ -35,17 +35,25 @@ def create_wall(space, x,y,width):
     shape.friction = mu
     space.add(shape)
 
-
+prepositions = []
+with open('positions.txt', 'r')as f:
+    for line in f:
+        prepositions.append([float(x) for x in line.strip('\n').split(':')])
+for v in prepositions:
+    print(v)
 def run(window, width, height):
     run           = True
+    lugindex  = 0
     clock         = pygame.time.Clock()
-    fps           = 240
+    fps           = 60
     dt            = 1/fps
     boards         = []
 
     space         = pymunk.Space()
     space.gravity = (0,981)
 
+    starttime = time.time()
+    lugpositions = []
     #create_wall(space, (deck2_end_x, deck2_end_y-10),(deck2_end_x, deck2_end_y-50), 10) 
     pinch = Wall((deck2_end_x, deck2_end_y-10),
                  (deck2_end_x, deck2_end_y-50),
@@ -74,28 +82,11 @@ def run(window, width, height):
                      10, 
                      space,
                      5)
-#    d2d2 = Chain((deck2dealer_start_x - (3*scale), deck2dealer_start_y-4),
-#                     (dealer2_position - (2*scale), deck2dealer_end_y-4), 
-#                     10, 
-#                     space,
-#                     5)
     d2       = Chain((deck2_start_x,deck2_start_y),
                      (deck2_end_x,deck2_end_y), 
                      10, 
                      space, 
                      16)
-    
-    #declineStop = Chain((declinestop_start_x, declinestop_start_y),
-    #                 (declinestop_end_x, declinestop_end_y), 
-    #                 10, 
-    #                 space,
-    #                 20)
-    #declineStop2 = Chain((declinestop_end_x-2, declinestop_start_y),
-    #                 (declinestop_end_x+35, decline_end_y), 
-    #                 10, 
-    #                 space,
-    #                 21)
-
     top_chain_handler            = space.add_collision_handler(1,2)
     top_chain_handler.begin      = top_chain_begin
     top_chain_handler.pre_solve  = top_chain_pre
@@ -156,17 +147,6 @@ def run(window, width, height):
                  (speedup_position -10, tc_height + 190),
                  startdebounce=.1)
 
-#    speed2   = SpeedupWheel((dealer2_position, deck2_start_y+2),
-#                            15, 
-#                            space)
-#    speed2.stop.downtime = dealer_stop_downtime
-    #pe3 = Sensor((dealer2_position-(16*scale), deck2_start_y - 100),
-    #             (dealer2_position-(16*scale), deck2_start_y + 30), 
-    #             1, 
-    #             space, 
-    #             9,
-    #             (dealer2_position +5, deck2_start_y + 50),
-    #             stopdebounce=.1)
 
     dealer2PE = Sensor((dealer2_position-10, deck2_start_y - 100),
                  (dealer2_position-10, deck2_start_y + 30), 
@@ -189,14 +169,6 @@ def run(window, width, height):
                         space,
                         13,
                         (50, tc_height-100))
-
-    #deck2fullPe = Sensor((dealer2_position - (85*scale), deck2_start_y-100),
-    #                     (dealer2_position - (85*scale), deck2_start_y+100),
-    #                     4,
-    #                     space,
-    #                     14,
-    #                     (dealer2_position + (20*scale), deck2_start_y-100),
-    #                     stopdebounce=deck2dealerfull_delay)
 
     deck2StopPe = Sensor((dealer2_position + (30*scale), deck2_start_y-100),
                          (dealer2_position + (30*scale), deck2_start_y+100),
@@ -244,9 +216,6 @@ def run(window, width, height):
 
     pressed_pos = None
 
-    #for x in range(0,6): 
-        #boards.append(Board((x*board_width, tc_height-board_height), (0,0), space))
-        #create_object(space, 10, (x * 70, tc_height-board_height))
     startcheck = True
     checkspeed1 = time.time()
     endcheck = True
@@ -297,6 +266,16 @@ def run(window, width, height):
 
     lugs = []
     lugPassedAllowDeal = True
+    totallugdistance = prepositions[-1][0] - prepositions[0][0]
+    print(totallugdistance)
+    numoflugs = int(totallugdistance/(18*scale))
+    for x in range(numoflugs-1):        
+        offset = int(x * (18*scale))
+        if offset > len(prepositions)-1:
+            offset = len(prepositions)-1
+        lugs.append(Lug((prepositions[offset][0], prepositions[offset][1]),(0,0),space))
+        lugs[x].body.angle = prepositions[offset][2]
+        #lugs[x].printLug()
     while run:
         el = time.time()
         #handle dealer 1
@@ -325,15 +304,6 @@ def run(window, width, height):
         else:
             tc_register.appendRegister(["Waiting",red])
 
-        #if deck2StopPe.blocked:
-        #    stopdeal = True
-
-        #if stopdeal and pe3.osf(True):
-        #    stopdeal = False
-
-        #if not stopdeal:
-        #    speed1.stop.deal(el)
-
 
         if deck2StopPe.osf(True):
             keepdeclinerunning = time.time()
@@ -343,30 +313,26 @@ def run(window, width, height):
             stopdecline = True
 
         if stopdecline:
-            #deck2_handler.begin      = intermediate_begin
-            #deck2_handler.pre_solve  = intermediate_pre
-            #deck2_handler.post_solve = intermediate_post
-            #deck2_handler.separate   = intermediate_separate
-        
-            #top_chain_handler.begin      = intermediate_begin
-            #top_chain_handler.pre_solve  = intermediate_pre
-            #top_chain_handler.post_solve = intermediate_post
-            #top_chain_handler.separate   = intermediate_separate
-            #top2_chain_handler.begin      = intermediate_begin
-            #top2_chain_handler.pre_solve  = intermediate_pre
-            #top2_chain_handler.post_solve = intermediate_post
-            #top2_chain_handler.separate   = intermediate_separate
-            
             decline_handler.begin      = intermediate_begin
             decline_handler.pre_solve  = intermediate_pre
             decline_handler.post_solve = intermediate_post
             decline_handler.separate   = intermediate_separate
-
-            for lug in lugs:
-                lug.stopLug()
         else:
-            for lug in lugs:
-                lug.moveLug()
+            for index, lug in enumerate(lugs):
+                lug.stepLugPos(prepositions, index) 
+                #lug.printLug()
+
+
+        #    for lug in lugs:
+        #        lug.stopLug()
+        #else:
+        #    for lug in lugs:
+        #        lug.moveLug()
+        #lugs[0].setLugPos(prepositions[lugindex-45])
+        #if lugindex < len(prepositions) -1:
+        #    lugindex += 1
+        #else:
+        #    lugindex = 0
 
         if not deck2StopPe.blocked:
             keepdeclinerunning = el
@@ -402,14 +368,6 @@ def run(window, width, height):
  
 
  
-        #handle dealer 2
-#        if dealer2PE.blocked and not deck2StopPe.blocked:
-#            speed2.stop.deal(el)
-#        if speed2.stop.state == "down":
-#            speed2.stop.deal(el)
-#            deck2dealer_register.appendRegister(["Dealing",green])
-#        else:
-#            deck2dealer_register.appendRegister(["Waiting",red])
 
         #handle pinch
         if pinchPE.blocked:
@@ -421,6 +379,11 @@ def run(window, width, height):
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                endtime = time.time()
+                #with open('positions.txt', 'w') as f:
+                #    for k,v in enumerate(lugpositions):
+                #        f.write(f'{v[0]}:{v[1]}:{v[2]}\n')
+                #    f.write(f'{(endtime - starttime)}')
                 pygame.quit()
                 sys.exit()    
         
@@ -442,14 +405,14 @@ def run(window, width, height):
 #                lugs.append(Lug((decline_start_x, decline_start_y-20),(0,0),space))
 #                lugStartPe.starttime = el
 
-        if lugStartPe.osr(True) or len(lugs) == 0:
-            lugs.append(Lug((decline_start_x-20, decline_start_y-20),(0,0),space))
+        #if lugStartPe.osr(True) or len(lugs) == 0:
+        #    lugs.append(Lug((decline_start_x-20, decline_start_y-20),(0,0),space))
 
 
-        if lugEndPe.osf(True):
-            if len(lugs)> 0:
-                lugs[0].removeLug(space)
-                lugs.pop(0)
+        #if lugEndPe.osf(True):
+        #    if len(lugs)> 0:
+        #        lugs[0].removeLug(space)
+        #        lugs.pop(0)
 
         lugdistance = 0
         if len(lugs) > 2:
@@ -469,7 +432,8 @@ def run(window, width, height):
                 if boards[0].body.position[0] > decline_end_x:
                     print(f"time to deck2dealer {(85 /(time.time() - checkspeed1))*5}")
                     endcheck = False
-
+        if len(lugs) > 0:
+            lugpositions.append([lugs[0].body.position[0], lugs[0].body.position[1], lugs[0].body.angle])
 
         window.fill(white)
         space.debug_draw(draw_options) 

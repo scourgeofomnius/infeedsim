@@ -144,6 +144,9 @@ class Lug:
         space.add(self.body,self.shape)
         self.start = time.time()
 
+    def printLug(self):
+        print(f'x: {self.body.position[0]} ---- y: {self.body.position[1]} ---- a: {self.body.angle}')
+
     def removeLug(self, space):
         space.remove(self.body)
         space.remove(self.shape)
@@ -160,6 +163,21 @@ class Lug:
         #self.body.position = ()
     def stopLug(self):
         self.body.velocity = (0,0)
+
+    def stepLugPos(self, data, ind):
+        pos = [self.body.position[0], self.body.position[1], self.body.angle]
+        index = 0
+        for d in data: 
+            if d == pos:
+                print(f'index = {ind}')
+                print(f'pos value {pos}')
+                print(f'd value {d}')
+                if index >= len(data)-1:
+                    index = -1
+                self.body.position = (data[index +1 ][0],data[index + 1][1])
+                self.body.angle = data[index +1][2]
+            index += 1
+
 
 class LugSensor:
     def __init__(self, pos1, pos2, width, space, ctype, regpos, stopdebounce = 0.08, startdebounce = 0.08):
