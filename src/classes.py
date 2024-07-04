@@ -165,13 +165,13 @@ class Lug:
         self.body.velocity = (0,0)
 
     def stepLugPos(self, data, ind):
-        pos = [self.body.position[0], self.body.position[1], self.body.angle]
+        pos = [self.body.position[0], self.body.position[1], self.body.angle, 0]
         index = 0
         for d in data: 
             if d == pos:
-                print(f'index = {ind}')
-                print(f'pos value {pos}')
-                print(f'd value {d}')
+                #print(f'index = {ind}')
+                #print(f'pos value {pos}')
+                #print(f'd value {d}')
                 if index >= len(data)-1:
                     index = -1
                 self.body.position = (data[index +1 ][0],data[index + 1][1])

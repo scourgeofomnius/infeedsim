@@ -58,12 +58,12 @@ dealer_stop_uptime = .01
 dealer_stop_downtime1 = .35
 deck2full_delay = .2
 deck2dealerfull_delay = .01
-board_process_time = 3.7
+board_process_time = 1.2
 
 #64 /48 =1.3 gives the scale. this was taken from a time measurement across deck2
 speed_scale = 1.4
 tc_max_speed = 70 * speed_scale
 tc2_max_speed = 120 * speed_scale
 deck2_max_speed = 100 * speed_scale
-decline_max_speed = 100 * speed_scale
+decline_max_speed = 80 * speed_scale
 speedup_max_speed = 200

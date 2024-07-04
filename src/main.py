@@ -36,9 +36,9 @@ def create_wall(space, x,y,width):
     space.add(shape)
 
 prepositions = []
-with open('positions.txt', 'r')as f:
+with open('position2.txt', 'r')as f:
     for line in f:
-        prepositions.append([float(x) for x in line.strip('\n').split(':')])
+        prepositions.append([float(x) if x != '' else 0 for x in line.strip('\n').strip('').split(':')] )
 for v in prepositions:
     print(v)
 def run(window, width, height):
@@ -178,24 +178,24 @@ def run(window, width, height):
                          (dealer2_position + (30*scale), deck2_start_y-100),
                          stopdebounce=deck2full_delay)
 
-    lugStartPe = LugSensor((decline_start_x + 100, decline_start_y -100),
-                         (decline_start_x + 100, decline_start_y +100),
-                         1,
-                         space,
-                         101,
-                         (0,0),
-                         stopdebounce=.01)
-
-
-    lugEndPe = LugSensor((decline_end_x, decline_end_y -100),
-                         (decline_end_x, decline_end_y +100),
-                         1,
-                         space,
-                         102,
-                         (0,0),
-                         stopdebounce=0)
-    dealerLugInterlockPe = LugSensor((decline_start_x+70, decline_start_y -100),
-                         (decline_start_x+70, decline_start_y +100),
+#    lugStartPe = LugSensor((decline_start_x + 100, decline_start_y -100),
+#                         (decline_start_x + 100, decline_start_y +100),
+#                         1,
+#                         space,
+#                         101,
+#                         (0,0),
+#                         stopdebounce=.01)
+#
+#
+#    lugEndPe = LugSensor((decline_end_x, decline_end_y -100),
+#                         (decline_end_x, decline_end_y +100),
+#                         1,
+#                         space,
+#                         102,
+#                         (0,0),
+#                         stopdebounce=0)
+    dealerLugInterlockPe = LugSensor((decline_start_x+5, decline_start_y +6),
+                         (decline_start_x+5, decline_start_y +25),
                          1,
                          space,
                          103,
@@ -206,7 +206,7 @@ def run(window, width, height):
 
 
     #PEs = [pinchPE,deck2StopPe,deck2fullPe,boardGenPE,pe3,dealer1_Pe_after,dealer1PE,dealer2PE]
-    PEs = [dealerLugInterlockPe,pinchPE,deck2StopPe,boardGenPE,dealer1PE,lugStartPe,lugEndPe]
+    PEs = [dealerLugInterlockPe,pinchPE,deck2StopPe,boardGenPE,dealer1PE]
 
     #stop1    = Stop((speedup_position, tc_height-10), (2,30),space)
 
@@ -266,11 +266,11 @@ def run(window, width, height):
 
     lugs = []
     lugPassedAllowDeal = True
-    totallugdistance = prepositions[-1][0] - prepositions[0][0]
+    totallugdistance = prepositions[-1][0] - prepositions[int((len(prepositions)-1)/2)][0]
     print(totallugdistance)
     numoflugs = int(totallugdistance/(18*scale))
-    for x in range(numoflugs-1):        
-        offset = int(x * (18*scale))
+    for x in range(19):        
+        offset = int(x * (10*scale))
         if offset > len(prepositions)-1:
             offset = len(prepositions)-1
         lugs.append(Lug((prepositions[offset][0], prepositions[offset][1]),(0,0),space))
@@ -288,7 +288,7 @@ def run(window, width, height):
 
         if dealerLugInterlockPe.osr(True):
             lugPassedAllowDeal = True
-            lugStartPe.starttime = el
+            #lugStartPe.starttime = el
 
 
         if dealer1PE.blocked and not deck2StopPe.blocked and lugPassedAllowDeal:
@@ -320,6 +320,7 @@ def run(window, width, height):
         else:
             for index, lug in enumerate(lugs):
                 lug.stepLugPos(prepositions, index) 
+                space.reindex_shapes_for_body(lug.body);
                 #lug.printLug()
 
 
